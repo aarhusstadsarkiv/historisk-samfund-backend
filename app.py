@@ -22,6 +22,7 @@ query_str = """
     articles_fts
     WHERE
     articles_fts = '' || ? || ''
+    and year is not NULL
     ORDER BY :sort: :direction:
     LIMIT cast(? as int) OFFSET cast(? as int)
 """
@@ -40,27 +41,35 @@ def shutdown():
 
 
 @lru_cache(maxsize=16)
-def get_total_hits(q: str) -> int:
+def get_total_hits(q: str, year: str = None) -> int:
     conn = get_connection()
-    total: tuple = conn.execute("SELECT COUNT(*) FROM articles_fts WHERE articles_fts = ?", (q,)).fetchone()
+    where_clause = "WHERE articles_fts = ?"
+    if year: where_clause += f" and year = {year}"
+    total: tuple = conn.execute(f"SELECT COUNT(*) FROM articles_fts {where_clause}", (q,)).fetchone()
     return int(total[0])
 
 
 def search_articles(request: Request):
     conn = get_connection()
     q: str = request.query_params["q"]
+    year: str = request.query_params.get("year")
     sort: str = request.query_params.get("sort", "year")
-    if sort.lower() not in ["title", "year", "rank", "author"]:
-        sort = "year"
+    if sort.lower() not in ["title_desc", "title_asc", "year_desc", "year_asc", "author_asc", "author_desc"]:
+        sort = "year_asc"
     direction: str = request.query_params.get("direction", "asc")
     if direction.lower() not in ["asc", "desc"]:
         direction = "asc"
     size = int(request.query_params.get("size", 20))
     offset = int(request.query_params.get("offset", 0))
-    total: int = get_total_hits(q)
+    total: int = get_total_hits(q, year)
 
     # get result-rows
-    prepared_stmt: str = query_str.replace(":sort:", sort).replace(":direction:", direction)
+    if year and 1908 <= int(year) <= 2014:
+        query_str2 = query_str.replace("year is not NULL", f"year = {year}")
+        prepared_stmt: str = query_str2.replace(":sort:", sort.split("_")[0]).replace(":direction:", sort.split("_")[1])
+    else:
+        prepared_stmt: str = query_str.replace(":sort:", sort.split("_")[0]).replace(":direction:", sort.split("_")[1])
+
     rows: list[dict] = []
     for row in conn.execute(prepared_stmt, (q, size, offset,)):
         rows.append({
@@ -74,11 +83,13 @@ def search_articles(request: Request):
         "q": q,
         "size": size,
         "sort": sort,
-        "direction": direction,
         "offset": offset,
         "rows": rows,
         "total": total
     }
+
+    # if the optional year-filter is present, add it to output
+    if year: out["year"] = int(year)
 
     # hvis offset plus size er mindre en total, så kan vi gå videre
     if offset + size < int(total):
