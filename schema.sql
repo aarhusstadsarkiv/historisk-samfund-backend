@@ -16,11 +16,13 @@ CREATE TABLE IF NOT EXISTS "articles" (
 
 CREATE VIRTUAL TABLE "articles_fts" USING FTS5(
   author,
-  title,
   year,
+  pages,
+  title,
   place,
   tags,
   data,
+  filename,
   detail = full,
   content_rowid = 'id',
   content = 'articles',
@@ -34,21 +36,25 @@ INSERT ON articles BEGIN
 INSERT INTO articles_fts (
     rowid,
     author,
-    title,
     year,
+    pages,
+    title,
     place,
     tags,
-    data
+    data,
+    filename
   )
 VALUES
   (
     new.id,
     new.author,
-    new.title,
     new.year,
+    new.pages,
+    new.title,
     new.place,
     new.tags,
-    new.data
+    new.data,
+    new.filename
   );
 END;
 COMMIT;

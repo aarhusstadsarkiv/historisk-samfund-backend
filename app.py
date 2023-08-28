@@ -14,10 +14,14 @@ from starlette.staticfiles import StaticFiles
 
 query_str = """
     SELECT
-    year,
-    title,
     author,
-    snippet(articles_fts, 5, '<b>', '</b>', '...', 60) text
+    year,
+    pages,
+    title,
+    place,
+    tags,
+    snippet(articles_fts, 6, '<b>', '</b>', '...', 60) text,
+    filename
     FROM
     articles_fts
     WHERE
@@ -29,7 +33,8 @@ query_str = """
 
 
 def get_connection() -> sqlite3.Connection:
-    return sqlite3.connect("file:historisk-samfund.db?mode=ro", uri=True)
+    # return sqlite3.connect("file:historisk-samfund.db?mode=ro", uri=True)
+    return sqlite3.connect("file:db.db?mode=ro", uri=True)
 
 
 def startup():
@@ -73,10 +78,14 @@ def search_articles(request: Request):
     rows: list[dict] = []
     for row in conn.execute(prepared_stmt, (q, size, offset,)):
         rows.append({
-            "year": row[0],
-            "title": row[1],
-            "author": row[2],
-            "snippet": row[3]
+                "author": row[0],
+                "year": row[1],
+                "pages": row[2],
+                "title": row[3],
+                "place": row[4],
+                "tags": row[5],
+                "snippet": row[6],
+                "filename": row[7]
         })
 
     out = {
