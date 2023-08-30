@@ -37,12 +37,12 @@ def get_connection() -> sqlite3.Connection:
     return sqlite3.connect("file:db.db?mode=ro", uri=True)
 
 
-def startup():
-    print('Startup-function called')
+# def startup():
+#     print('Startup-function called')
 
 
-def shutdown():
-    print('Shutdown-function called')
+# def shutdown():
+#     print('Shutdown-function called')
 
 
 @lru_cache(maxsize=16)
@@ -137,8 +137,8 @@ exception_handlers = {
 
 app = Starlette(
     routes=routes,
-    on_startup=[startup],
-    on_shutdown=[shutdown],
+    # on_startup=[startup],
+    # on_shutdown=[shutdown],
     debug=True,
     exception_handlers=exception_handlers
 )
