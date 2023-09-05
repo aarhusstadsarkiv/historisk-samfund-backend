@@ -155,7 +155,9 @@ routes = [
 
 middleware = [
     Middleware(HTTPSRedirectMiddleware),
-    Middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["GET"]),
+    Middleware(
+        CORSMiddleware, allow_origins=["*"], allow_methods=["GET", "HEAD", "OPTIONS"]
+    ),
 ]
 
 
